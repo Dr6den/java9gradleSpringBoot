@@ -1,0 +1,85 @@
+plugins {
+	id 'org.springframework.boot' version '2.1.5.RELEASE'
+	id 'java'
+        id 'com.zyxist.chainsaw' version '0.1.3'
+}
+
+apply plugin: 'io.spring.dependency-management'
+
+group = 'com.example'
+version = '0.0.1-SNAPSHOT'
+sourceCompatibility = '12'
+
+repositories {
+	mavenCentral()
+}
+
+ext {
+    camelVersion = '2.22.1'
+}
+
+dependencies {
+    testImplementation 'org.springframework.boot:spring-boot-starter-test'
+    compile group: 'org.springframework.boot', name: 'spring-boot', version: '2.1.5.RELEASE'
+    compile group: 'org.springframework.boot', name: 'spring-boot-autoconfigure', version: '2.1.5.RELEASE'
+    compile group: 'org.springframework.boot', name: 'spring-boot-test', version: '2.1.5.RELEASE'
+    compile group: 'junit', name: 'junit', version: '4.12'
+    compile group: 'org.json', name: 'json', version: '20160212'
+    compile group: 'org.apache.kafka', name: 'kafka-streams', version: '2.2.0'
+    compile group: 'org.apache.kafka', name: 'kafka-clients', version: '2.2.0'
+    
+    
+    //compile "org.apache.camel:camel-kafka:$camelVersion"
+    /*compile "org.apache.camel:camel-netty4-http:$camelVersion"
+    compile "org.apache.camel:camel-http4:$camelVersion"
+    compile "org.apache.camel:camel-jaxb:$camelVersion"
+    compile "org.apache.camel:camel-ognl:$camelVersion"
+    compile "org.apache.camel:camel-jackson:$camelVersion"
+    compile "org.apache.camel:camel-jasypt:$camelVersion"*/
+    //compile "org.apache.camel:camel-jetty:$camelVersion"
+    
+
+}
+
+ext.moduleName = 'com.example.demo.modular' 
+
+compileJava {
+    //inputs.property("moduleName", moduleName)
+    String classpathString = classpath.asPath
+    doFirst {
+        options.compilerArgs = [
+            '--module-path', classpathString,
+        ]
+        classpath = files()
+    }
+}
+
+compileTestJava {
+    ext.moduleName = 'com.example.demo.modular'
+    //inputs.property("moduleName", 'test.example.demo.modular')
+    String classpathString = classpath.asPath
+    println "######################################  " + inputs.hasProperty("moduleName")
+    doFirst {
+        options.compilerArgs = [
+            '--module-path', classpathString, 
+            '--add-modules', 'junit',  
+            '--add-reads', "$moduleName=junit", 
+            '--patch-module', "$moduleName=" + files(sourceSets.test.java.srcDirs).asPath,
+        ]
+        classpath = files()
+    }
+}
+
+test {
+    inputs.property("moduleName", moduleName)
+    String classpathString = classpath.asPath
+    doFirst {
+        jvmArgs = [
+            '--module-path', classpathString, 
+            '--add-modules', 'ALL-MODULE-PATH', 
+            '--add-reads', "$moduleName=junit", 
+            '--patch-module', "$moduleName=" + files(sourceSets.test.java.outputDir).asPath, 
+        ]
+        classpath = files()
+    }
+}
